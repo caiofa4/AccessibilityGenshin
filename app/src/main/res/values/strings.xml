@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">AccessibilityGenshin</string>
+    <string name="accessibility_service_description">This service controls the game Genshin, using accessibility features</string>
+
+</resources>
