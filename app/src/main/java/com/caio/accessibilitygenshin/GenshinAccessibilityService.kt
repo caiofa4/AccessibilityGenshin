@@ -2,17 +2,21 @@ package com.caio.accessibilitygenshin
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
+import android.content.Context
 import android.content.Intent
 import android.graphics.Path
 import android.util.Log
+import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import com.caio.accessibilitygenshin.SharedData.device
 import com.caio.accessibilitygenshin.SharedData.shouldRun
 import com.caio.accessibilitygenshin.constants.Direction
 import com.caio.accessibilitygenshin.constants.SwipeMode
 import com.caio.accessibilitygenshin.constants.commandDelay
 import com.caio.accessibilitygenshin.model.SwipeCoordinates
 import com.caio.accessibilitygenshin.constants.packageId
+import com.caio.accessibilitygenshin.model.Device
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 
@@ -31,6 +35,7 @@ class GenshinAccessibilityService : AccessibilityService() {
             rootNode?.let {
                 if (shouldRun) {
                     Log.d(tag, "shouldRun")
+                    getDeviceInfo(this)
                     runBlocking {
                         Log.d(tag, "runBlocking")
                         runGameCommands()
@@ -78,20 +83,24 @@ class GenshinAccessibilityService : AccessibilityService() {
         Log.d(tag, "canRetrieveWindowContent = ${serviceInfo.canRetrieveWindowContent}")
     }
 
-    private fun getStartY(height: Int): Float {
-        val ratioY = if (SharedData.device.isOpenFoldable()) {
-            0.845f
+    private fun getStartY(mode: SwipeMode, height: Int): Float {
+        val ratioY = if (device.isOpenFoldable()) {
+            0.875f
         } else {
             0.763f
         }
 
-        val centerY = height * ratioY
-        return centerY.coerceIn(0f, height.toFloat())
+        val centerY = when (mode) {
+            SwipeMode.Move -> height * ratioY            // left 20%
+            SwipeMode.ChangeCamera -> height * 0.5f      // right 50%
+        }.coerceIn(0f, height.toFloat())
+
+        return centerY
     }
 
     private fun getStartX(mode: SwipeMode, width: Int): Float {
-        val ratioX = if (SharedData.device.isOpenFoldable()) {
-            0.845f
+        val ratioX = if (device.isOpenFoldable()) {
+            0.153f
         } else {
             0.183f
         }
@@ -107,13 +116,13 @@ class GenshinAccessibilityService : AccessibilityService() {
     private fun getSwipeCoordinates(
         direction: Direction,
         mode: SwipeMode,
-        width: Int = SharedData.device.width,
-        height: Int = SharedData.device.height
+        width: Int = device.width,
+        height: Int = device.height
     ): SwipeCoordinates {
         val offset = 300f // how far to swipe
 
         val startX = getStartX(mode, width)
-        val startY = getStartY(height)
+        val startY = getStartY(mode, height)
 
         val (endX, endY) = when (direction) {
             Direction.Up -> Pair(startX, (startY - offset).coerceIn(0f, height.toFloat()))
@@ -181,14 +190,14 @@ class GenshinAccessibilityService : AccessibilityService() {
     private fun pressJump() {
         Log.d(tag, "pressJump")
 
-        val (ratioX, ratioY) = if (SharedData.device.isOpenFoldable()) {
-            0.921f to 0.77f // 92.1% of screen width and 77% of screen height
+        val (ratioX, ratioY) = if (device.isOpenFoldable()) {
+            0.921f to 0.79f // 92.1% of screen width and 77% of screen height
         } else {
             0.882f to 0.658f // 88.2% of screen width and 65.8% of screen height
         }
 
-        val jumpX = SharedData.device.width * ratioX
-        val jumpY = SharedData.device.height * ratioY
+        val jumpX = device.width * ratioX
+        val jumpY = device.height * ratioY
         Log.d(tag, "jumpX: $jumpX")
         Log.d(tag, "jumpY: $jumpY")
         pressAt(jumpX, jumpY)
@@ -197,14 +206,14 @@ class GenshinAccessibilityService : AccessibilityService() {
     private fun pressAttack() {
         Log.d(tag, "pressAttack")
 
-        val (ratioX, ratioY) = if (SharedData.device.isOpenFoldable()) {
+        val (ratioX, ratioY) = if (device.isOpenFoldable()) {
             0.827f to 0.847f // 82.7% of screen width and 84.7% of screen height
         } else {
             0.806f to 0.758f // 80.6% of screen width and 75.8% of screen height
         }
 
-        val attackX = SharedData.device.width * ratioX
-        val attackY = SharedData.device.height * ratioY
+        val attackX = device.width * ratioX
+        val attackY = device.height * ratioY
         Log.d(tag, "attackX: $attackX")
         Log.d(tag, "attackY: $attackY")
         pressAt(attackX, attackY)
@@ -213,14 +222,14 @@ class GenshinAccessibilityService : AccessibilityService() {
     private fun pressDash() {
         Log.d(tag, "pressDash")
 
-        val (ratioX, ratioY) = if (SharedData.device.isOpenFoldable()) {
+        val (ratioX, ratioY) = if (device.isOpenFoldable()) {
             0.921f to 0.909f
         } else {
             0.882f to 0.858f // 88.2% of screen width and 85.8% of screen height
         }
 
-        val dashX = SharedData.device.width * ratioX
-        val dashY = SharedData.device.height * ratioY
+        val dashX = device.width * ratioX
+        val dashY = device.height * ratioY
         Log.d(tag, "dashX: $dashX")
         Log.d(tag, "jumpY: $dashY")
         pressAt(dashX, dashY)
@@ -280,5 +289,22 @@ class GenshinAccessibilityService : AccessibilityService() {
         val launchIntent = packageManager.getLaunchIntentForPackage("com.caio.accessibilitygenshin")
         launchIntent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         startActivity(launchIntent)
+    }
+
+    private fun getDeviceInfo(context: Context) {
+        val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        val bounds = wm.currentWindowMetrics.bounds
+
+        var fullWidth = bounds.width()
+        var fullHeight = bounds.height()
+
+        Log.d("TESTTAG", "Width: $fullWidth, Height: $fullHeight")
+        device = Device(fullHeight, fullWidth)
+        if (!device.isOpenFoldable() && fullHeight > fullWidth) {
+            fullHeight = fullWidth.also { fullWidth = fullHeight }
+        }
+
+        device = Device(fullHeight, fullWidth)
+        Log.d("TESTTAG", "Width: $fullWidth, Height: $fullHeight")
     }
 }

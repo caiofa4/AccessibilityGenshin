@@ -1,15 +1,8 @@
 package com.caio.accessibilitygenshin
 
-import android.content.Context
 import android.content.Intent
-import android.content.res.Resources
-import android.graphics.Rect
-import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.util.DisplayMetrics
-import android.util.Log
-import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -31,20 +24,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
-import com.caio.accessibilitygenshin.SharedData.device
 import com.caio.accessibilitygenshin.SharedData.shouldRun
-import com.caio.accessibilitygenshin.model.Device
 import com.caio.accessibilitygenshin.ui.theme.AccessibilityGenshinTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Tell the system that we will handle window insets manually
-//        WindowCompat.setDecorFitsSystemWindows(window, false)
 
         enableEdgeToEdge()
         setContent {
@@ -56,45 +41,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-
-//        hideSystemUI()
-
-        getDeviceInfo(this)
-    }
-
-    private fun getDeviceInfo(context: Context) {
-//        var width = Resources.getSystem().displayMetrics.widthPixels
-//        var height = Resources.getSystem().displayMetrics.heightPixels
-//
-//        Log.d("TESTTAG", "Width: $width, Height: $height")
-//        if (height > width) {
-//            height = width.also { width = height }
-//        }
-//
-//        device = Device(height, width)
-//        Log.d("TESTTAG", "Width: $width, Height: $height")
-//
-
-        val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        val bounds = wm.currentWindowMetrics.bounds
-
-        var fullWidth = bounds.width()
-        var fullHeight = bounds.height()
-
-        Log.d("TESTTAG", "Width: $fullWidth, Height: $fullHeight")
-        if (fullHeight > fullWidth) {
-            fullHeight = fullWidth.also { fullWidth = fullHeight }
-        }
-
-        device = Device(fullHeight, fullWidth)
-        Log.d("TESTTAG", "Width: $fullWidth, Height: $fullHeight")
-    }
-
-    private fun hideSystemUI() {
-        WindowInsetsControllerCompat(window, window.decorView).apply {
-            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            hide(WindowInsetsCompat.Type.systemBars())
-        }
     }
 }
 
@@ -103,7 +49,7 @@ class MainActivity : ComponentActivity() {
 fun MainScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
 
-    MarkerAt91Percent()
+//    MarkerAt91Percent()
 
     Column(
         modifier = modifier.fillMaxSize(),
